@@ -1,0 +1,30 @@
+name: Build APK
+on:
+  push:
+  workflow_dispatch:
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Arrange folders
+        run: |
+          for f in app--*; do
+            t="$(echo "$f" | sed 's/--/\//g')"
+            mkdir -p "$(dirname "$t")"
+            mv "$f" "$t"
+          done
+          mkdir -p app/src/main/assets
+          curl -L -o app/src/main/assets/hand_landmarker.task https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: 8.7
+      - run: gradle assembleDebug
+      - uses: actions/upload-artifact@v4
+        with:
+          name: gesture-apk
+          path: app/build/outputs/apk/debug/*.apk
